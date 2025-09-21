@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+    </head>
+    <body>
+        <h1>
+            Student list
+        </h1>
+        <div class = "card">
+            <button id = "Loadbutton" onclick="fetchstudents()"> Load data</button>
+            <ul id = "lst"></ul>
+        </div>
+        <script>
+            const API_base = "http://127.0.0.1:5000/student"
+            async function fetchstudents(){
+                try {
+                    const res = await fetch(API_base,{headers:{'Accept':'application/json'}});
+                    if (!res.ok) throw new Error (`HTTP ${res.status}`)
+                    const data = await res.json();
+                    const lst = document.getElementById('lst')
+                    lst.innerHTML = '';
+                    for (let i = 0; i < data.length; i++) {
+                          lst.appendChild(renderitem(data[i]));
+                    }
+                          
+                }catch(err){
+                    setstatus("Error"+err.message)
+                }
+            }        
+            
+            function renderitem(item) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                        <div><strong>${item[1] + ":" + item[2] ?? 'item'}</strong></div>`;
+                        return li;
+                    }
+            </script>
+
+        <h2>Add Student</h2>
+        <div class="card">
+            <input type="text" id="student_name" placeholder="Student Name" />
+            <input type="text" id="student_email" placeholder="Student Email" />
+            <button id="submitBtn">Submit</button>
+        </div>
+
+    <script>
+  
+        document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('submitBtn').addEventListener('click', createItem);
+    });
+
+  async function createItem() {
+    const studentNameInput = document.getElementById('student_name');
+    const studentEmailInput = document.getElementById('student_email');
+
+    const student_name = studentNameInput.value.trim();
+    const student_email = studentEmailInput.value.trim();
+
+    if (!student_name || !student_email) {
+      alert("Please fill in both fields.");
+      return;
+    }
+
+    try {
+      const res = await fetch(API_base, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+     
+        body: JSON.stringify({ name: student_name, email: student_email 
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const result = await res.json();
+      alert("Student updated successfully!");
+
+     
+      studentNameInput.value = '';
+      studentEmailInput.value = '';
+
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  }
+</script>

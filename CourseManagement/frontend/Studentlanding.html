@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landing Page</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    #welcomeText {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #4facfe;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      transition: 0.3s;
+    }
+
+    li:hover {
+      background: #eef6ff;
+      transform: scale(1.01);
+    }
+
+    li strong {
+      font-size: 1rem;
+      color: #444;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button#Enroll {
+      background: #4facfe;
+      color: #fff;
+    }
+
+    button#Enroll:hover {
+      background: #00c6ff;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="welcomeText">Welcome</h1>
+
+  <h1>ENROLLED COURSES</h1>
+  <div class="card">
+    <ul id="lst"></ul>
+  </div>
+
+  <h1>OTHER COURSES</h1>
+  <div class="card">
+    <ul id="lstother"></ul>
+  </div>
+
+<script>
+    const queryString = window.location.search;
+    const params = new URLSearchParams(queryString);
+    const name = params.get("student_name");
+    if (name) {
+      document.getElementById("welcomeText").textContent = "Welcome " + name;
+    }
+
+    const API_base = "http://127.0.0.1:5000/enrolledcourses";
+    const API_base_othercourse = "http://127.0.0.1:5000/othercourses";
+    const API_base_enrollment = "http://127.0.0.1:5000/enrollments";
+
+    async function enrolledcourses() {
+      console.log("enrolledcourses() called ✅");
+      const student_id = params.get("student_id");
+
+      try {
+        const res = await fetch(API_base + "/" + student_id, { headers: { "Accept": "application/json" } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        console.log("Got data:", data);
+
+        const lst = document.getElementById("lst");
+        lst.innerHTML = "";
+
+        for (let i = 0; i < data.length; i++) {
+          lst.appendChild(enrolledcoursesrenderitem(data[i]));
+      }
+      } catch (err) {
+        document.getElementById("lst").innerHTML = " Error: " + err.message;
+      }
+      othercourses();
+    }
+
+    function enrolledcoursesrenderitem(item) {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${item.title} : ${item.description}</strong>`;
+      return li;
+    }
+
+    async function othercourses() {
+      console.log("othercourses() called ✅");
+      const student_id = params.get("student_id");
+      try {
+        const res = await fetch(API_base_othercourse + "/" + student_id, { headers: { "Accept": "application/json" } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        console.log("Got data:", data);
+
+        const lst = document.getElementById("lstother");
+        lst.innerHTML = "";
+
+        for (let i = 0; i < data.length; i++) {
+          lst.appendChild(othercoursesrenderitem(data[i]));
+        }
+      } catch (err) {
+        document.getElementById("lstother").innerHTML = " Error: " + err.message;
+      }
+    }
+
+    function othercoursesrenderitem(item) {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${item.title} : ${item.description}</strong>
+        <button id="Enroll" data-id="${item.c_id}" onclick="Enrollstudent(${item.c_id})">Enroll</button>
+
+      `;
+      return li;
+    }
+
+    async function Enrollstudent(course_id) {
+      const student_id = params.get("student_id");
+      try {
+        await fetch(API_base_enrollment, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify({
+            student_id: parseInt(student_id),
+            course_id: course_id,
+          }),
+        });
+        const button = document.querySelector(`#Enroll[data-id="${course_id}"]`);
+        if (button) {
+         const li = button.parentElement;
+         button.remove(); // remove enroll button
+         document.getElementById("lst").appendChild(li); // move to enrolled list
+        }
+
+
+        othercourses(); // refresh after enrolling
+        enrolledcourses();
+      } catch (err) {
+        document.getElementById("lst").innerHTML = " Error: " + err.message;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", enrolledcourses);
+  </script>
+</body>
+</html>

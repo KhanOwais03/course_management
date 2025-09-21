@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  
+    <title>Courses</title>
+</head>
+<body>
+    <h1 id = "welcomeText">Welcome</h1>
+    <h1>COURSE LIST</h1>
+    <div class="card">
+        <ul id="lst"></ul>
+    </div>
+
+    <script>
+        const queryString = window.location.search;
+        const params = new URLSearchParams(queryString);
+        const name = params.get("student_name");
+        if (name) {
+            document.getElementById("welcomeText").textContent = "Welcome" + name;
+        }
+        const API_base = "http://127.0.0.1:5000/courses";
+
+        async function fetchstudents() {
+            console.log("fetchstudents() called ✅");
+            try {
+                const res = await fetch(API_base, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                const data = await res.json();
+                console.log("Got data:", data);
+
+                const lst = document.getElementById('lst');
+                lst.innerHTML = '';
+
+                for (let i = 0; i < data.length; i++) {
+                    lst.appendChild(renderitem(data[i]));
+                }
+
+            } catch (err) {
+                document.getElementById('lst').innerHTML = "❌ Error: " + err.message;
+            }
+        }
+
+       
+        function renderitem(item) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div><strong>${item.title} : ${item.description}</strong></div>`;
+            return li;
+        }
+
+  
+        document.addEventListener("DOMContentLoaded", fetchstudents);
+    </script>
+
+    <h2>Create Course</h2>
+    <div class="card">
+        <input type="text" id="course_title" placeholder="Course Title" />
+        <input type="text" id="course_description" placeholder="Course Description" />
+        <button id="submitBtn">Submit</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('submitBtn').addEventListener('click', createItem);
+        });
+
+        async function createItem() {
+            const courseTitleInput = document.getElementById('course_title');
+            const courseDescInput = document.getElementById('course_description');
+
+            const course_title = courseTitleInput.value.trim();
+            const course_description = courseDescInput.value.trim();
+
+            if (!course_title || !course_description) {
+                alert("Please fill in both fields.");
+                return;
+            }
+
+            try {
+                const res = await fetch(API_base, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        course_title: course_title,
+                        course_description: course_description
+                    })
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const result = await res.json();
+                alert("Course created successfully!");
+
+                courseTitleInput.value = '';
+                courseDescInput.value = '';
+
+              
+                fetchstudents();
+
+            } catch (err) {
+                document.getElementById('lst').innerHTML = "❌ Error: " + err.message;
+            }
+        }
+    </script>
+</body>
+</html>
